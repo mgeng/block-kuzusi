@@ -6,7 +6,6 @@ const H = canvas.height;  // 640
 
 // ---- 設定 ----
 const PADDLE_H = 10;
-const PADDLE_W = 80;
 const BALL_R = 7;
 const BLOCK_ROWS = 8;
 const BLOCK_COLS = 8;
@@ -15,6 +14,48 @@ const BLOCK_GAP = 3;
 const BLOCK_TOP = 30;
 const BLOCK_AREA_H = BLOCK_ROWS * (BLOCK_H + BLOCK_GAP) - BLOCK_GAP;
 
+const MODES = {
+  p: {
+    label: 'P root',
+    lives: 7,
+    paddleW: 120,
+    paddleSpeed: 8,
+    powerupChance: 0.38,
+    powerupSpeed: 2,
+    ballVxBase: 2.1,
+    ballVxLevel: 0.14,
+    ballVyBase: 3.3,
+    ballVyLevel: 0.22,
+    maxBallSpeed: 5.6,
+  },
+  n: {
+    label: 'N root',
+    lives: 5,
+    paddleW: 100,
+    paddleSpeed: 8,
+    powerupChance: 0.3,
+    powerupSpeed: 2.2,
+    ballVxBase: 2.4,
+    ballVxLevel: 0.18,
+    ballVyBase: 3.7,
+    ballVyLevel: 0.28,
+    maxBallSpeed: 6.2,
+  },
+  g: {
+    label: 'G root',
+    lives: 1,
+    paddleW: 72,
+    paddleSpeed: 7,
+    powerupChance: 0.08,
+    powerupSpeed: 2.8,
+    ballVxBase: 3.1,
+    ballVxLevel: 0.26,
+    ballVyBase: 4.7,
+    ballVyLevel: 0.42,
+    maxBallSpeed: 8,
+  },
+};
+
 const LEVEL_IMAGES = [
   '../assets/images/block-kuzushi/clear1.png',
   '../assets/images/block-kuzushi/clear2.png',
@@ -22,8 +63,6 @@ const LEVEL_IMAGES = [
 ];
 
 // ---- パワーアップ設定 ----
-const POWERUP_CHANCE  = 0.18;
-const POWERUP_SPEED   = 2.5;
 const POWERUP_W       = 24;
 const POWERUP_H       = 16;
 const WIDE_DURATION   = 600;
@@ -39,10 +78,11 @@ const POWERUP_TABLE = ['W','W','+','+','S','S','B','F'];
 // ---- 状態 ----
 let state = 'idle'; // idle | playing | dead | clear | cleared
 let score = 0;
-let lives = 3;
+let lives = 5;
 let level = 1;
+let mode = 'n';
 
-let paddle = { x: W / 2 - PADDLE_W / 2, y: H - 40 };
+let paddle = { x: W / 2 - MODES.n.paddleW / 2, y: H - 40 };
 let ball = {};
 let blocks = [];
 let powerups = [];
@@ -58,8 +98,13 @@ let clearText      = '';
 let clearAnim      = 0;
 
 // ---- ユーティリティ ----
+function modeConfig() {
+  return MODES[mode];
+}
+
 function getPaddleW() {
-  return effects.wide > 0 ? Math.round(PADDLE_W * 1.8) : PADDLE_W;
+  const baseW = modeConfig().paddleW;
+  return effects.wide > 0 ? Math.round(baseW * 1.8) : baseW;
 }
 function blockWidth() {
   return (W - (BLOCK_COLS + 1) * BLOCK_GAP) / BLOCK_COLS;
@@ -68,11 +113,12 @@ function blockWidth() {
 // ---- 初期化系 ----
 function initBall() {
   const pw = getPaddleW();
+  const cfg = modeConfig();
   ball = {
     x: paddle.x + pw / 2,
     y: paddle.y - BALL_R - 2,
-    vx: (Math.random() > 0.5 ? 1 : -1) * (3 + level * 0.25),
-    vy: -(4.5 + level * 0.4),
+    vx: (Math.random() > 0.5 ? 1 : -1) * (cfg.ballVxBase + level * cfg.ballVxLevel),
+    vy: -(cfg.ballVyBase + level * cfg.ballVyLevel),
     onPaddle: true,
   };
 }
@@ -122,11 +168,12 @@ function initLevel() {
 function resetGame() {
   fireworkTimers.forEach(t => clearTimeout(t));
   fireworkTimers = []; particles = []; clearAnim = 0;
-  score = 0; lives = 3; level = 1;
+  score = 0; lives = modeConfig().lives; level = 1;
+  paddle = { x: W / 2 - getPaddleW() / 2, y: H - 40 };
   updateHUD();
   initLevel();
   state = 'idle';
-  setMessage('クリックまたはタップでスタート');
+  setMessage(`${modeConfig().label}: クリック / タップ / Space でスタート`);
   loop();
 }
 
@@ -134,9 +181,25 @@ function updateHUD() {
   document.getElementById('score').textContent = score;
   document.getElementById('lives').textContent = lives;
   document.getElementById('level').textContent = level;
+  document.getElementById('mode').textContent = modeConfig().label;
 }
 function setMessage(msg) {
   document.getElementById('message').textContent = msg;
+}
+
+function updateModeButtons() {
+  document.querySelectorAll('.route-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+}
+
+function setMode(nextMode) {
+  if (!MODES[nextMode]) return;
+  mode = nextMode;
+  bgm.stop();
+  hideGallery();
+  updateModeButtons();
+  resetGame();
 }
 
 // ---- 効果音 ----
@@ -259,7 +322,7 @@ function drawParticles() {
 function showGallery(isGameClear, clearedLevel) {
   document.getElementById('gallery-img').src = currentImageSrc;
   document.getElementById('gallery-title').textContent =
-    isGameClear ? '全クリア！ おめでとう！' : `Level ${clearedLevel} クリア！`;
+    isGameClear ? `${modeConfig().label} 全クリア！` : `${modeConfig().label} Level ${clearedLevel} クリア！`;
   const btn = document.getElementById('gallery-btn');
   btn.textContent = isGameClear ? 'もう一度' : '次のレベルへ';
   btn.onclick = () => {
@@ -274,6 +337,24 @@ function hideGallery() {
 }
 
 // ---- 入力 ----
+const keys = {
+  left: false,
+  right: false,
+};
+
+function movePaddleBy(dx) {
+  const pw = getPaddleW();
+  paddle.x = Math.max(0, Math.min(W - pw, paddle.x + dx));
+  if (ball.onPaddle) ball.x = paddle.x + pw / 2;
+}
+
+function updateKeyboardMovement() {
+  if (state !== 'idle' && state !== 'playing') return;
+  const speed = modeConfig().paddleSpeed;
+  if (keys.left) movePaddleBy(-speed);
+  if (keys.right) movePaddleBy(speed);
+}
+
 canvas.addEventListener('mousemove', e => {
   const rect = canvas.getBoundingClientRect();
   const mx = (e.clientX - rect.left) * (W / rect.width);
@@ -289,6 +370,46 @@ canvas.addEventListener('touchmove', e => {
   paddle.x = Math.max(0, Math.min(W - pw, mx - pw / 2));
   if (ball.onPaddle) ball.x = paddle.x + pw / 2;
 }, { passive: false });
+
+function handleActionKey() {
+  const gallery = document.getElementById('gallery');
+  if (!gallery.classList.contains('hidden')) {
+    document.getElementById('gallery-btn').click();
+  } else if (state === 'dead') {
+    resetGame();
+  } else {
+    launch();
+  }
+}
+
+document.addEventListener('keydown', e => {
+  const key = e.key.toLowerCase();
+  if (key === 'arrowleft' || key === 'h') {
+    keys.left = true;
+    e.preventDefault();
+  } else if (key === 'arrowright' || key === 'l') {
+    keys.right = true;
+    e.preventDefault();
+  } else if (key === 'j' || key === 'k') {
+    e.preventDefault();
+  } else if (key === ' ') {
+    handleActionKey();
+    e.preventDefault();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  const key = e.key.toLowerCase();
+  if (key === 'arrowleft' || key === 'h') {
+    keys.left = false;
+    e.preventDefault();
+  } else if (key === 'arrowright' || key === 'l') {
+    keys.right = false;
+    e.preventDefault();
+  } else if (key === 'j' || key === 'k' || key === ' ') {
+    e.preventDefault();
+  }
+});
 
 function launch() {
   if (state === 'idle' || (state === 'playing' && ball.onPaddle)) {
@@ -328,12 +449,20 @@ function applyPowerup(type) {
 }
 
 function dropPowerup(b) {
-  if (Math.random() < POWERUP_CHANCE) {
+  if (Math.random() < modeConfig().powerupChance) {
     powerups.push({
       x: b.x + b.w / 2, y: b.y + b.h / 2,
       type: POWERUP_TABLE[Math.floor(Math.random() * POWERUP_TABLE.length)],
     });
   }
+}
+
+function capBallSpeed() {
+  const speed = Math.hypot(ball.vx, ball.vy);
+  const maxSpeed = modeConfig().maxBallSpeed;
+  if (speed <= maxSpeed) return;
+  ball.vx = ball.vx / speed * maxSpeed;
+  ball.vy = ball.vy / speed * maxSpeed;
 }
 
 // ---- 衝突判定 ----
@@ -346,6 +475,8 @@ function rectCircle(bx, by, bw, bh, cx, cy, r) {
 
 // ---- ゲームロジック ----
 function update() {
+  updateKeyboardMovement();
+
   if (state === 'cleared') {
     clearAnim++;
     updateParticles();
@@ -357,7 +488,8 @@ function update() {
   if (effects.wide > 0) {
     if (effects.wide === 1) {
       const center = paddle.x + getPaddleW() / 2;
-      paddle.x = Math.max(0, Math.min(W - PADDLE_W, center - PADDLE_W / 2));
+      const baseW = modeConfig().paddleW;
+      paddle.x = Math.max(0, Math.min(W - baseW, center - baseW / 2));
     }
     effects.wide--;
   }
@@ -366,7 +498,7 @@ function update() {
   // パワーアップ落下
   const pw = getPaddleW();
   powerups = powerups.filter(p => {
-    p.y += POWERUP_SPEED;
+    p.y += modeConfig().powerupSpeed;
     if (p.y > H) return false;
     if (p.y + POWERUP_H/2 >= paddle.y && p.y - POWERUP_H/2 <= paddle.y + PADDLE_H &&
         p.x + POWERUP_W/2 >= paddle.x && p.x - POWERUP_W/2 <= paddle.x + pw) {
@@ -391,6 +523,7 @@ function update() {
     ball.y = paddle.y - BALL_R;
     const rel = (ball.x - (paddle.x + pw / 2)) / (pw / 2);
     ball.vx = rel * 5;
+    capBallSpeed();
     if (effects.fire > 0) effects.fire = FIRE_DURATION;
     playSfx('paddle');
   }
@@ -401,14 +534,14 @@ function update() {
     if (lives <= 0) {
       state = 'dead'; bgm.stop();
       playSfx('gameover');
-      setMessage('ゲームオーバー… クリックでリスタート');
+      setMessage(`${modeConfig().label}: ゲームオーバー… クリック / Space でリスタート`);
       canvas.addEventListener('click', resetOnDead, { once: true });
       canvas.addEventListener('touchstart', resetOnDead, { once: true, passive: true });
       return;
     }
     playSfx('miss');
     initBall();
-    setMessage('クリックで再開');
+    setMessage(`${modeConfig().label}: クリック / Space で再開`);
   }
 
   let cleared = true;
@@ -422,6 +555,7 @@ function update() {
         const ol = ball.x - b.x, or_ = b.x + b.w - ball.x;
         const ot = ball.y - b.y, ob  = b.y + b.h - ball.y;
         if (Math.min(ol, or_) < Math.min(ot, ob)) ball.vx *= -1; else ball.vy *= -1;
+        capBallSpeed();
       }
     }
   }
@@ -436,7 +570,7 @@ function onClear() {
   const isGameClear  = clearedLevel >= 3;
   state = 'cleared';
   clearAnim = 0;
-  clearText = isGameClear ? '全クリア！' : `Level ${clearedLevel} クリア！`;
+  clearText = isGameClear ? `${modeConfig().label} CLEAR!` : `${modeConfig().label} Lv ${clearedLevel} CLEAR!`;
   playSfx('clear');
 
   if (!isGameClear) { level++; updateHUD(); }
@@ -454,7 +588,7 @@ function startNextLevel() {
   particles = []; clearAnim = 0;
   initLevel();
   state = 'idle';
-  setMessage('クリックでスタート');
+  setMessage(`${modeConfig().label}: クリック / Space でスタート`);
 }
 
 // ---- 描画 ----
@@ -554,6 +688,10 @@ document.getElementById('mute-btn').addEventListener('click', () => {
   document.getElementById('mute-btn').textContent = on ? '🔊' : '🔇';
 });
 
+document.querySelectorAll('.route-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+
 // ---- 初期化 ----
-initLevel();
-loop();
+updateModeButtons();
+resetGame();

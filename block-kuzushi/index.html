@@ -23,6 +23,8 @@
     }
     #hud {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       gap: 2rem;
       font-size: 1rem;
       color: var(--accent2);
@@ -34,6 +36,30 @@
       text-align: center;
     }
     .controls { font-size: 0.8rem; color: var(--muted); text-align: center; }
+    #route-select {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .route-btn {
+      background: transparent;
+      border: 1px solid var(--muted);
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      font: inherit;
+      padding: 0.35rem 0.65rem;
+    }
+    .route-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 14px rgba(224,64,251,0.28);
+    }
+    .route-btn:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
     #mute-btn {
       position: fixed;
       top: 0.75rem;
@@ -108,12 +134,18 @@
     <div id="game-area">
       <div id="hud">
         <span>スコア: <b id="score">0</b></span>
-        <span>残機: <b id="lives">3</b></span>
+        <span>残機: <b id="lives">5</b></span>
         <span>Lv: <b id="level">1</b></span>
+        <span>Root: <b id="mode">N root</b></span>
+      </div>
+      <div id="route-select" aria-label="ルート選択">
+        <button class="route-btn" data-mode="p" type="button">P root</button>
+        <button class="route-btn active" data-mode="n" type="button">N root</button>
+        <button class="route-btn" data-mode="g" type="button">G root</button>
       </div>
       <canvas id="canvas" width="360" height="640"></canvas>
       <div id="message">クリックまたはタップでスタート</div>
-      <div class="controls">マウス / タッチでパドルを動かす</div>
+      <div class="controls">マウス / タッチ / ←→ / h l で移動、Space でスタート</div>
     </div>
   </main>
 
