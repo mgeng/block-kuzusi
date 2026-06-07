@@ -139,6 +139,68 @@ function setMessage(msg) {
   document.getElementById('message').textContent = msg;
 }
 
+// ---- 効果音 ----
+let audioCtx = null;
+let sfxEnabled = true;
+
+function getAudioContext() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration = 0.08, type = 'square', volume = 0.08, endFreq = freq) {
+  if (!sfxEnabled) return;
+  const ac = getAudioContext();
+  const now = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), now + duration);
+  gain.gain.setValueAtTime(volume, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(now);
+  osc.stop(now + duration);
+}
+
+function playNoise(duration = 0.12, volume = 0.05) {
+  if (!sfxEnabled) return;
+  const ac = getAudioContext();
+  const buffer = ac.createBuffer(1, Math.floor(ac.sampleRate * duration), ac.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  const gain = ac.createGain();
+  src.buffer = buffer;
+  gain.gain.setValueAtTime(volume, ac.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+  src.connect(gain).connect(ac.destination);
+  src.start();
+}
+
+function playSfx(name) {
+  if (!sfxEnabled) return;
+  if (name === 'launch') playTone(440, 0.08, 'triangle', 0.07, 760);
+  else if (name === 'wall') playTone(280, 0.035, 'square', 0.035, 220);
+  else if (name === 'paddle') playTone(520, 0.055, 'square', 0.06, 740);
+  else if (name === 'block') playTone(760, 0.05, 'square', 0.055, 420);
+  else if (name === 'powerup') {
+    playTone(660, 0.06, 'triangle', 0.06, 880);
+    setTimeout(() => playTone(990, 0.06, 'triangle', 0.05, 1320), 55);
+  } else if (name === 'bomb') {
+    playNoise(0.18, 0.08);
+    playTone(140, 0.16, 'sawtooth', 0.07, 60);
+  } else if (name === 'miss') playTone(220, 0.16, 'sawtooth', 0.06, 90);
+  else if (name === 'gameover') playTone(180, 0.35, 'sawtooth', 0.07, 50);
+  else if (name === 'clear') {
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      setTimeout(() => playTone(freq, 0.12, 'triangle', 0.06, freq * 1.1), i * 90);
+    });
+  }
+}
+
 // ---- 花火パーティクル ----
 function spawnBurst(x, y) {
   const hue = Math.random() * 360;
@@ -230,6 +292,8 @@ canvas.addEventListener('touchmove', e => {
 
 function launch() {
   if (state === 'idle' || (state === 'playing' && ball.onPaddle)) {
+    getAudioContext();
+    playSfx('launch');
     ball.onPaddle = false;
     state = 'playing';
     setMessage('');
@@ -256,9 +320,11 @@ function applyPowerup(type) {
     const alive = blocks.filter(b => b.alive).sort(() => Math.random() - 0.5).slice(0, BOMB_COUNT);
     for (const b of alive) { b.alive = false; score += b.points; }
     updateHUD(); bombFlash = 25;
+    playSfx('bomb');
   } else if (type === 'F') {
     effects.fire = FIRE_DURATION;
   }
+  if (type !== 'B') playSfx('powerup');
 }
 
 function dropPowerup(b) {
@@ -314,9 +380,9 @@ function update() {
   ball.x += ball.vx;
   ball.y += ball.vy;
 
-  if (ball.x - BALL_R < 0)  { ball.x = BALL_R;       ball.vx *= -1; }
-  if (ball.x + BALL_R > W)  { ball.x = W - BALL_R;   ball.vx *= -1; }
-  if (ball.y - BALL_R < 0)  { ball.y = BALL_R;        ball.vy *= -1; }
+  if (ball.x - BALL_R < 0)  { ball.x = BALL_R;       ball.vx *= -1; playSfx('wall'); }
+  if (ball.x + BALL_R > W)  { ball.x = W - BALL_R;   ball.vx *= -1; playSfx('wall'); }
+  if (ball.y - BALL_R < 0)  { ball.y = BALL_R;        ball.vy *= -1; playSfx('wall'); }
 
   if (ball.vy > 0 &&
       ball.y + BALL_R >= paddle.y && ball.y + BALL_R <= paddle.y + PADDLE_H + Math.abs(ball.vy) &&
@@ -326,6 +392,7 @@ function update() {
     const rel = (ball.x - (paddle.x + pw / 2)) / (pw / 2);
     ball.vx = rel * 5;
     if (effects.fire > 0) effects.fire = FIRE_DURATION;
+    playSfx('paddle');
   }
 
   if (ball.y - BALL_R > H) {
@@ -333,11 +400,13 @@ function update() {
     updateHUD();
     if (lives <= 0) {
       state = 'dead'; bgm.stop();
+      playSfx('gameover');
       setMessage('ゲームオーバー… クリックでリスタート');
       canvas.addEventListener('click', resetOnDead, { once: true });
       canvas.addEventListener('touchstart', resetOnDead, { once: true, passive: true });
       return;
     }
+    playSfx('miss');
     initBall();
     setMessage('クリックで再開');
   }
@@ -348,6 +417,7 @@ function update() {
     cleared = false;
     if (rectCircle(b.x, b.y, b.w, b.h, ball.x, ball.y, BALL_R)) {
       b.alive = false; score += b.points; updateHUD(); dropPowerup(b);
+      playSfx('block');
       if (effects.fire <= 0) {
         const ol = ball.x - b.x, or_ = b.x + b.w - ball.x;
         const ot = ball.y - b.y, ob  = b.y + b.h - ball.y;
@@ -367,6 +437,7 @@ function onClear() {
   state = 'cleared';
   clearAnim = 0;
   clearText = isGameClear ? '全クリア！' : `Level ${clearedLevel} クリア！`;
+  playSfx('clear');
 
   if (!isGameClear) { level++; updateHUD(); }
 
@@ -479,6 +550,7 @@ function loop() {
 // ---- ミュートボタン ----
 document.getElementById('mute-btn').addEventListener('click', () => {
   const on = bgm.toggle();
+  sfxEnabled = on;
   document.getElementById('mute-btn').textContent = on ? '🔊' : '🔇';
 });
 
