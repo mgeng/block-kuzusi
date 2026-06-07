@@ -1,0 +1,60 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d1a;
+  --surface: #1a1a2e;
+  --accent: #e040fb;
+  --accent2: #00e5ff;
+  --text: #f0f0f0;
+  --muted: #888;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+header {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: var(--surface);
+  border-bottom: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+header a { color: var(--accent2); text-decoration: none; font-size: 0.9rem; }
+header a:hover { text-decoration: underline; }
+
+h1 { font-size: 1.4rem; color: var(--accent); }
+
+main {
+  width: 100%;
+  max-width: 900px;
+  padding: 2rem 1rem;
+  flex: 1;
+}
+
+
+.btn {
+  padding: 0.6rem 2rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--accent2);
+  color: var(--accent2);
+}
