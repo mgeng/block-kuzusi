@@ -57,9 +57,9 @@ const MODES = {
 };
 
 const LEVEL_IMAGES = [
-  '../assets/images/block-kuzushi/clear1.png',
-  '../assets/images/block-kuzushi/clear2.png',
-  '../assets/images/block-kuzushi/clear3.png',
+  'assets/images/block-kuzushi/clear1.png',
+  'assets/images/block-kuzushi/clear2.png',
+  'assets/images/block-kuzushi/clear3.png',
 ];
 
 // ---- パワーアップ設定 ----
@@ -126,7 +126,7 @@ function initBall() {
 function initBlocks() {
   blocks = [];
   const bw = blockWidth();
-  const colors = ['#e040fb','#f06292','#ff8a65','#ffd54f','#aed581','#4dd0e1','#b39ddb','#ef9a9a'];
+  const colors = ['#ff2d95','#ff4b2f','#ffd34d','#39ff88','#19f6ff','#4d7dff','#b45cff','#ffffff'];
   for (let r = 0; r < BLOCK_ROWS; r++) {
     for (let c = 0; c < BLOCK_COLS; c++) {
       blocks.push({
@@ -593,8 +593,25 @@ function startNextLevel() {
 
 // ---- 描画 ----
 function draw() {
-  ctx.fillStyle = '#0a0a14';
+  ctx.fillStyle = '#050511';
   ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = '#19f6ff';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= W; x += 24) {
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, 0);
+    ctx.lineTo(x + 0.5, H);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= H; y += 24) {
+    ctx.beginPath();
+    ctx.moveTo(0, y + 0.5);
+    ctx.lineTo(W, y + 0.5);
+    ctx.stroke();
+  }
+  ctx.restore();
 
   if (bombFlash > 0) {
     ctx.fillStyle = `rgba(255,109,0,${bombFlash / 25 * 0.45})`;
@@ -614,8 +631,16 @@ function draw() {
     // 残っているブロック
     for (const b of blocks) {
       if (!b.alive) continue;
+      ctx.save();
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 8;
       ctx.fillStyle = b.color;
       ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 3); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
     }
 
     // パワーアップ
@@ -642,8 +667,14 @@ function draw() {
 
     // パドル
     const pw = getPaddleW();
+    ctx.save();
+    ctx.shadowColor = effects.wide > 0 ? '#ff2d95' : '#19f6ff';
+    ctx.shadowBlur = 14;
     ctx.fillStyle = effects.wide > 0 ? '#ce93d8' : '#00e5ff';
     ctx.beginPath(); ctx.roundRect(paddle.x, paddle.y, pw, PADDLE_H, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillRect(paddle.x + 8, paddle.y + 2, Math.max(0, pw - 16), 2);
+    ctx.restore();
 
     // ボール
     ctx.save();
