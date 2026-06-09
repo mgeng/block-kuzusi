@@ -293,11 +293,12 @@
         font-size: clamp(0.61rem, 2.7vw, 0.76rem);
       }
       #hud span { min-height: 1.75rem; padding: 0.2rem 0.1rem; }
+      #difficulty-label { display: none; }
       #route-select { gap: 0.3rem; }
       .route-btn { min-width: 0; flex: 1; padding: 0.4rem 0.25rem; font-size: 0.7rem; }
       .screen-shell {
         width: auto;
-        height: min(55dvh, 640px);
+        height: min(61dvh, 680px);
         aspect-ratio: 9 / 16;
         padding: 7px;
       }
@@ -320,7 +321,7 @@
     @media (max-width: 380px), (max-height: 700px) {
       header { display: none; }
       main { padding-top: 0.35rem; }
-      .screen-shell { height: min(58dvh, 560px); }
+      .screen-shell { height: min(63dvh, 600px); }
       .touch-btn { min-height: 2.8rem; }
     }
   </style>
@@ -340,7 +341,7 @@
         <span>スコア: <b id="score">0</b></span>
         <span>残機: <b id="lives">5</b></span>
         <span>Lv: <b id="level">1</b></span>
-        <span>難易度: <b id="mode">Normal</b></span>
+        <span><span id="difficulty-label">難易度: </span><b id="mode">Normal</b></span>
       </div>
       <div id="route-select" aria-label="難易度選択">
         <button class="route-btn" data-mode="p" type="button">Easy</button>

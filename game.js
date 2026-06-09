@@ -90,6 +90,8 @@ const WIDE_DURATION   = 600;
 const FIRE_DURATION   = 360;
 const BOMB_COUNT      = 10;
 const GALLERY_DELAY   = 2600; // 花火演出の長さ（ms）
+const GAME_OVER_DELAY = 1200;
+const GAME_OVER_IMAGE = 'assets/images/block-kuzushi/game-over.webp';
 
 const POWERUP_COLORS = {
   W: '#ab47bc', '+': '#ef5350', S: '#29b6f6', B: '#ff6d00', F: '#ff3d00',
@@ -355,6 +357,18 @@ function showGallery(isGameClear, clearedLevel) {
   document.getElementById('gallery').classList.remove('hidden');
 }
 
+function showGameOverGallery() {
+  document.getElementById('gallery-img').src = GAME_OVER_IMAGE;
+  document.getElementById('gallery-title').textContent = '残念…';
+  const btn = document.getElementById('gallery-btn');
+  btn.textContent = 'もう一度';
+  btn.onclick = () => {
+    hideGallery();
+    resetGame();
+  };
+  document.getElementById('gallery').classList.remove('hidden');
+}
+
 function hideGallery() {
   document.getElementById('gallery').classList.add('hidden');
 }
@@ -399,7 +413,7 @@ function handleActionKey() {
   if (!gallery.classList.contains('hidden')) {
     document.getElementById('gallery-btn').click();
   } else if (state === 'dead') {
-    resetGame();
+    return;
   } else {
     launch();
   }
@@ -557,9 +571,11 @@ function update() {
     if (lives <= 0) {
       state = 'dead'; bgm.stop();
       playSfx('gameover');
-      setMessage(`${modeConfig().label}: ゲームオーバー… クリック / Space でリスタート`);
-      canvas.addEventListener('click', resetOnDead, { once: true });
-      canvas.addEventListener('touchstart', resetOnDead, { once: true, passive: true });
+      setMessage(`${modeConfig().label}: GAME OVER`);
+      const tid = setTimeout(() => {
+        if (state === 'dead') showGameOverGallery();
+      }, GAME_OVER_DELAY);
+      fireworkTimers.push(tid);
       return;
     }
     playSfx('miss');
@@ -584,8 +600,6 @@ function update() {
   }
   if (cleared) onClear();
 }
-
-function resetOnDead() { resetGame(); }
 
 function onClear() {
   bgm.stop();
@@ -724,6 +738,20 @@ function draw() {
     ctx.restore();
 
     drawParticles();
+  }
+
+  if (state === 'dead') {
+    ctx.fillStyle = 'rgba(0,0,8,0.72)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 46px sans-serif';
+    ctx.shadowColor = '#ff2d95';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = '#ffd34d';
+    ctx.fillText('GAME OVER', W / 2, H / 2);
+    ctx.restore();
   }
 }
 
