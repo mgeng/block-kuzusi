@@ -16,7 +16,7 @@ const BLOCK_AREA_H = BLOCK_ROWS * (BLOCK_H + BLOCK_GAP) - BLOCK_GAP;
 
 const MODES = {
   p: {
-    label: 'Easy',
+    label: '簡単',
     lives: 7,
     paddleW: 120,
     paddleSpeed: 8,
@@ -29,7 +29,7 @@ const MODES = {
     maxBallSpeed: 5.6,
   },
   n: {
-    label: 'Normal',
+    label: '普通',
     lives: 5,
     paddleW: 100,
     paddleSpeed: 8,
@@ -42,7 +42,7 @@ const MODES = {
     maxBallSpeed: 6.2,
   },
   g: {
-    label: 'Hard',
+    label: '難しい',
     lives: 1,
     paddleW: 72,
     paddleSpeed: 7,
