@@ -4,6 +4,7 @@
 const bgm = (() => {
   let audio = null;
   let muted = false;
+  let currentSrc = '';
 
   function getAudio() {
     if (!audio) {
@@ -16,7 +17,13 @@ const bgm = (() => {
 
   return {
     setSrc(src) {
-      getAudio().src = src;
+      if (src === currentSrc) return;
+      const a = getAudio();
+      const wasPlaying = !a.paused;
+      currentSrc = src;
+      a.src = src;
+      a.load();
+      if (wasPlaying && !muted) a.play().catch(() => {});
     },
     start() {
       if (muted) return;

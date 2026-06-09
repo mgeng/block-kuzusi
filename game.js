@@ -56,10 +56,31 @@ const MODES = {
   },
 };
 
-const LEVEL_IMAGES = [
-  'assets/images/block-kuzushi/clear1.png',
-  'assets/images/block-kuzushi/clear2.png',
-  'assets/images/block-kuzushi/clear3.png',
+const LEVELS = [
+  {
+    image: 'assets/images/block-kuzushi/reward1.webp',
+    bgm: 'assets/bgm/block-kuzushi.mp3',
+  },
+  {
+    image: 'assets/images/block-kuzushi/reward2.webp',
+    bgm: 'assets/bgm/8bit-Func.mp3',
+  },
+  {
+    image: 'assets/images/block-kuzushi/reward3.webp',
+    bgm: 'assets/bgm/D1.mp3',
+  },
+  {
+    image: 'assets/images/block-kuzushi/reward4.webp',
+    bgm: 'assets/bgm/D4.mp3',
+  },
+  {
+    image: 'assets/images/block-kuzushi/reward5.webp',
+    bgm: 'assets/bgm/D6-2.mp3',
+  },
+  {
+    image: 'assets/images/block-kuzushi/reward6.webp',
+    bgm: 'assets/bgm/Untitled.mp3',
+  },
 ];
 
 // ---- パワーアップ設定 ----
@@ -157,7 +178,9 @@ function initLevel() {
   effects.wide = 0;
   effects.fire = 0;
   bombFlash = 0;
-  currentImageSrc = LEVEL_IMAGES[(level - 1) % LEVEL_IMAGES.length];
+  const levelConfig = LEVELS[level - 1];
+  currentImageSrc = levelConfig.image;
+  bgm.setSrc(levelConfig.bgm);
   const img = new Image();
   img.onload = () => { rewardCanvas = buildRewardCanvas(img); };
   img.src = currentImageSrc;
@@ -567,7 +590,7 @@ function resetOnDead() { resetGame(); }
 function onClear() {
   bgm.stop();
   const clearedLevel = level;
-  const isGameClear  = clearedLevel >= 3;
+  const isGameClear  = clearedLevel >= LEVELS.length;
   state = 'cleared';
   clearAnim = 0;
   clearText = isGameClear ? `${modeConfig().label} CLEAR!` : `${modeConfig().label} Lv ${clearedLevel} CLEAR!`;
@@ -722,6 +745,26 @@ document.getElementById('mute-btn').addEventListener('click', () => {
 document.querySelectorAll('.route-btn').forEach(btn => {
   btn.addEventListener('click', () => setMode(btn.dataset.mode));
 });
+
+function bindHoldButton(id, direction) {
+  const button = document.getElementById(id);
+  const start = e => {
+    e.preventDefault();
+    keys[direction] = true;
+  };
+  const stop = e => {
+    e.preventDefault();
+    keys[direction] = false;
+  };
+  button.addEventListener('pointerdown', start);
+  button.addEventListener('pointerup', stop);
+  button.addEventListener('pointercancel', stop);
+  button.addEventListener('pointerleave', stop);
+}
+
+bindHoldButton('touch-left', 'left');
+bindHoldButton('touch-right', 'right');
+document.getElementById('touch-action').addEventListener('click', handleActionKey);
 
 // ---- 初期化 ----
 updateModeButtons();
